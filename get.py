@@ -304,7 +304,35 @@ def getData(url, params, fun):
 # -- public --
 
 # 获取省市数据
-#def getSs():
+def getSs():
+    try:
+        rjson = json.load(open('ss.json', 'r'))
+        return rjson
+    except FileNotFoundError as e:
+        pass
+
+    host = 'http://yz.chsi.com.cn'
+    sspath = '/zsml/pages/getSs.jsp'
+    url = host + sspath
+    r = requests.post(url)
+    rjson = []
+    try:
+        rjson =  r.json()
+    except:
+        print('ss')
+        return getSs()
+    #return rjson
+    result = []
+    for item in rjson:
+        row = []
+        code = item['dm']
+        name = item['mc']
+        row.append(code)
+        row.append(name)
+        result.append(row)
+    json.dump(result, open('ss.json', 'w'))
+    return result 
+
 
 # 生成参数
 def makeParams(params):
@@ -326,11 +354,33 @@ def makeParams(params):
 
 # 给定省市获取学校信息 
 # params schema: {'ssdm':sscode}
-def getSchool():
+def getSchoolFromSS(params):
     #print(params)
     urlschool = 'http://yz.chsi.com.cn/zsml/queryAction.do'
-    #schools =  getData(urlschool, params, handleSchool) 
-    schools = json.load(open('school.json', 'r'))
+    schools = []
+    try:
+        schools =  getData(urlschool, params, handleSchool) 
+    except:
+        return getSchool()
+    #schools = json.load(open('school.json', 'r'))
+    return schools
+
+# 获取全部学校信息 
+def getSchool():
+    try:
+        schools = json.load(open('school.json', 'r'))
+        return schools
+    except FileNotFoundError as e:
+        pass
+    urlschool = 'http://yz.chsi.com.cn/zsml/queryAction.do'
+    schools = []
+    params = {}
+    try:
+        schools =  getData(urlschool, params, handleSchool) 
+        print('schools')
+    except:
+        return getSchool()
+    json.dump(schools, open('school.json', 'w'))
     return schools
 
 # 给定学校信息获取专业信息

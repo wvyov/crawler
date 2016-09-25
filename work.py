@@ -1,12 +1,14 @@
 from get import getSchool
 from get import getProfession
 from get import getExaminations
+from get import getSs
 from get import makeParams
 
 
 from db import writeSchool
 from db import writeProfession
 from db import writeExaminations
+from db import writeSs
 from db import selectnotProfession
 
 import json
@@ -48,8 +50,11 @@ def isNull(data):
 
 
 
-# 消费考试范围信息
 
+# --- get examinations from profession
+
+
+# 消费考试范围信息
 
 # 消费专业信息, 生产考试范围信息
 
@@ -96,7 +101,7 @@ def cSchoolpProfession(c):
 
         
 # 生产学校信息
-def run(c):
+def pSchool(c):
     c.send(None)
     #schools = getSchool()
     schools = selectnotProfession()
@@ -131,7 +136,15 @@ def run(c):
 
 # --- init ---
 
-#def initSs():
+#def initdb():
+
+
+def initSs():
+    sss = getSs()
+    try:
+        writeSs(sss)
+    except sqlite3.IntegrityError as e:
+        return
 
 def initSchool():
     schools = getSchool()
@@ -144,11 +157,16 @@ def initSchool():
 # --- main ---
 
 if __name__ == '__main__':
-    
+   
+    #initSs()
+    print('write Ss')
+
     initSchool()
+    print('write school')
 
     c = cSchoolpProfession(None)
-    run(c)
+    pSchool(c)
+    print('write profession')
 
     if integrityschool :
         writejson('integrityschool.json', integrityschool)

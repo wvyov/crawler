@@ -1,7 +1,9 @@
 import sqlite3
 import json
 
-# -- private --
+# --- private ---
+
+dbfilename = 'yz.db'
 
 insertschool = 'insert into school values (?, ?, ?, ?, ?, ?, ?, ?, ?)'
 inserts_p = 'insert into school_profession values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
@@ -13,7 +15,7 @@ tabmap = {'school': insertschool, 'school_profession': inserts_p, 'profession_ex
 def wirtedbitem(tablename, data):
     if not data:
         return
-    conn = sqlite3.connect('chsi.db')
+    conn = sqlite3.connect(dbfilename)
     cursor = conn.cursor()
     sql = tabmap[tablename]
     errordata = []
@@ -38,21 +40,21 @@ def wirtedbitem(tablename, data):
 def writedb(tablename, data):
     if not data:
         return
-
-    conn = sqlite3.connect('chsi.db')
+    conn = sqlite3.connect(dbfilename)
     cursor = conn.cursor()
     sql = tabmap[tablename]
     try:
         cursor.executemany(sql, data)
     except sqlite3.IntegrityError as e:
         conn.rollback()
-        json.dump(data, open('errordb.json', 'w'))
         raise e
     finally:
         conn.commit()
         conn.close()
 
-# -- public --
+# --- public ---
+
+
 
 # 将数据写入school表
 def writeSchool(data):
@@ -70,12 +72,14 @@ def writeExaminations(data):
 def writeSs(data):
     writedb('ss', data)
 
-
+# 查寻未写入专业信息的学校
 def selectnotProfession():
-    conn = sqlite3.connect('chsi.db')
+    conn = sqlite3.connect(dbfilename)
     cursor = conn.cursor()
     sql = 'select * from school where name not in(select school_name from school_profession group by school_code)'
     cursor.execute(sql)
     results = cursor.fetchall()
     return results
+
+# 查询未写入考试范围的专业
 
