@@ -10,10 +10,12 @@ from db import writeProfession
 from db import writeExaminations
 from db import writeSs
 from db import selectnotProfession
+from db import pageingQueryProfession
 
 import json
 import sqlite3
 import requests
+from multiprocessing.dummy import Pool as ThreadPool
 
 # 由传入学校参数，生成完整参数
 def makeParamsFromSchool(school):
@@ -23,55 +25,36 @@ def makeParamsFromSchool(school):
     params = {'ssdm': sscode, 'dwmc' : name, 'school_id':id}
     return makeParams(params) 
 
-def writejson(filename, data):
-    json.dump(tmp, open(filename, 'w'))
-    return
-    tmp = []
-    try:
-        tmp = json.load(open(filename, 'r'))
-    except:
-        tmp = []
-    finally:
-        tmp.extend(data)
-        json.dump(tmp, open(filename, 'w'))
+# 由传入专业参数，生成查询考试范围的参数 
+def makeParamsFromProfession(profession):
+    data = {}
+    professionid = profession[1] + profession[3] + profession[5] + profession[7]
+    id = profession[12]
+    dwmc = '(' + profession[1] + ')' + profession[2]
+    yxsmc = '(' + profession[3] + ')' + profession[4]
+    zymc = '(' + profession[5] + ')' + profession[6]
+    yjfxmc = '(' + profession[7] + ')' + profession[8]
 
-def isNull(data):
-    if not data:
-        return data
-    for row in data:
-        if not row:
-            return row
+    data['professionid'] = professionid
+    data['id'] = id
+    data['dwmc'] = dwmc
+    data['yxsmc'] = yxsmc
+    data['zymc'] = zymc
+    data['yjfxmc'] = yjfxmc
 
     return data
-
-
-
-
-
-
-
-
-# --- get examinations from profession
-
-
-# 消费考试范围信息
-
-# 消费专业信息, 生产考试范围信息
 
 
 # -- get professions from school --
 
 errorschool = []
 
-integrityschool = []
 
+# 消费学校信息, 生产专业信息(从网络获取)
 
-# 消费学校信息, 生产专业信息
-
-def cSchoolpProfession(c):
+def cSchoolpProfession():
     schooldata = {}
     n = 0
-    total = []
     while True:
         school = yield schooldata
         params = makeParamsFromSchool(school)
@@ -88,7 +71,6 @@ def cSchoolpProfession(c):
 
         except sqlite3.IntegrityError as e:
             print('inserted: ' + school[1])
-            integrityschool.append(school)
             continue
         except requests.exceptions.RequestException as e:
             # 发生异常, 已加入errorschool
@@ -119,7 +101,7 @@ def pSchool(c):
     global errorschool
 
     while errorschool :
-        print('error school : ' + str(len(errorschool)))
+        print('error schools : ' + str(len(errorschool)))
 
         schools = errorschool
         errorschool = []
@@ -132,6 +114,55 @@ def pSchool(c):
             i = i +1
 
     c.close()
+
+
+# --- get examinations from profession ---
+
+
+# 分批获取数据，并写入
+def cProfessionpExaminations():
+    professiontotal = pageingQueryProfession() 
+    i = 0
+    k = 0
+    n = 0
+    for professions in professiontotal:
+        print(str(i) + ':')
+        #pool.map(cProfessionpExaminations, professions)
+        pool = ThreadPool(10)
+        result = pool.map(getExaminationsByProfession, professions)
+        
+        pool.close()
+        pool.join()
+
+
+        exams = []
+        for resultitem in result:
+            if resultitem:
+                exams.extend(resultitem)
+
+        writeExaminations(exams)
+
+        k = len(exams)
+        n = n + k
+        i = i + 1
+        print(k)
+        print(n)
+        print('')
+
+# 获取profession, 构造参数，发起请求，返回数据
+def getExaminationsByProfession(profession):
+    params = makeParamsFromProfession(profession)
+    exams = []
+    try:
+        #print(params)
+        exams = getExaminations(params)
+    except requests.exceptions.RequestException as e:
+        print(e)
+        pass
+    except:
+        pass
+    return exams
+
 
 
 # --- init ---
@@ -163,14 +194,16 @@ if __name__ == '__main__':
 
     initSchool()
     print('write school')
-
-    c = cSchoolpProfession(None)
+    
+    # 获取专业信息，并写入数据库
+    c = cSchoolpProfession()
     pSchool(c)
     print('write profession')
 
-    if integrityschool :
-        writejson('integrityschool.json', integrityschool)
-        print(integrityschool)
+
+    # 获取考试范围信息, 并写入数据库 
+    cProfessionpExaminations()
+    print('write examinations')
 
 
 

@@ -215,7 +215,7 @@ def handleExaminations(r, params):
         return result
     
     # 提取信息的正则表达式
-    idnamepattern = re.compile(r'\((?P<id>[-0-9a-zA-z]+)\)(?P<name>.+)')
+    idnamepattern = re.compile(r'(\((?P<id>[-0-9a-zA-z]+)?\)(?P<name>.+)?)?')
     # 数据
     for tr in body:
         tds = tr('td')
@@ -230,6 +230,10 @@ def handleExaminations(r, params):
         g = re.match(idnamepattern, strs)
         id = g.group('id')
         name = g.group('name')
+        if not id:
+            id = ''
+        if not name:
+            name = ''
         row.append(id)
         row.append(name)
         # 外语
@@ -237,6 +241,10 @@ def handleExaminations(r, params):
         g = re.match(idnamepattern, strs)
         id = g.group('id')
         name = g.group('name')
+        if not id:
+            id = ''
+        if not name:
+            name = ''
         row.append(id)
         row.append(name)
         # 业务课一
@@ -244,6 +252,10 @@ def handleExaminations(r, params):
         g = re.match(idnamepattern, strs)
         id = g.group('id')
         name = g.group('name')
+        if not id:
+            id = ''
+        if not name:
+            name = ''
         row.append(id)
         row.append(name)
         # 业务课二
@@ -251,6 +263,10 @@ def handleExaminations(r, params):
         g = re.match(idnamepattern, strs)
         id = g.group('id')
         name = g.group('name')
+        if not id:
+            id = ''
+        if not name:
+            name = ''
         row.append(id)
         row.append(name)
 
@@ -394,7 +410,9 @@ def getProfession(params):
 # school, faculties, profession, resarch_direction :'(' + code ')' + name
 def getExaminations(params):
     urlexaminations = 'http://yz.chsi.com.cn/zsml/kskm.jsp'
-    return getData(urlexaminations, params, handleExaminations)
+    result = getData(urlexaminations, params, handleExaminations)
+    #print(len(result))
+    return result
 
  
 

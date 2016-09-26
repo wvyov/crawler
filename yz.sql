@@ -42,7 +42,7 @@ create table school_profession(
 -- 专业-考试范围
 drop table profession_examinations;
 create table profession_examinations(
-    id text primary key not null, -- 接主键, 拼接策略: 学校代码 + 院系所代码 + 专业代码 + 研究方向代码 + 序号
+    id text primary key not null, -- school_profession.examinations + 序号
     profession_id text not null, --  专业id, school_profession外建,
     political_code text not null, -- 政治课代码
     political_name text not null, -- 政治课
